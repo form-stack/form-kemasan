@@ -263,19 +263,40 @@
 </div>
 
 <script>
-    // ⚠️ MASUKKAN LINK SCRIPT GOOGLE ANDA DI BAWAH INI ⚠️
+    // ⚠️ MASUKKAN LINK GOOGLE APPS SCRIPT ANDA DI SINI ⚠️
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_m3EdzspSCZwSnEzDwM_H_VIW4UC1vIKgSlkaWK5A-WrCgZf_MEHZi1QGuQ_YZIcN/exec";
 
-    // Ambil data awal dari localStorage
     let database = JSON.parse(localStorage.getItem('databaseDesain')) || [];
 
+    // Saat halaman dibuka, langsung muat data dari Google Sheets secara Online
     window.onload = function() {
-        renderTable(database);
+        muatDataDariSheets();
     };
+
+    // Fungsi mengambil data terpusat dari Google Sheets
+    function muatDataDariSheets() {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = `<tr><td colspan="6" class="empty-msg">🔄 Mengambil data terbaru dari server...</td></tr>`;
+
+        fetch(WEB_APP_URL)
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    database = data;
+                    localStorage.setItem('databaseDesain', JSON.stringify(database));
+                }
+                renderTable(database);
+            })
+            .catch(error => {
+                console.error('Gagal memuat data dari server:', error);
+                renderTable(database); // Gunakan cadangan lokal jika gagal koneksi
+            });
+    }
 
     function formatDate(dateStr) {
         if(!dateStr) return "____ / ____ / 2026";
         const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
         const day = String(d.getDate()).padStart(2, '0');
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const year = d.getFullYear();
@@ -294,7 +315,7 @@
         }
     }
 
-    // Submit Form (Sekarang terhubung ke Google Sheets & Browser)
+    // Submit Form
     document.getElementById('formPengajuan').addEventListener('submit', function(e) {
         e.preventDefault();
 
@@ -310,11 +331,7 @@
             targetDeadline: document.getElementById('targetDeadline').value
         };
 
-        // 1. Simpan ke Local Storage (Browser)
-        database.push(dataBaru);
-        localStorage.setItem('databaseDesain', JSON.stringify(database));
-
-        // 2. Kirim Data ke Google Sheets melalui Apps Script
+        // Kirim Data ke Google Sheets
         fetch(WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors',
@@ -322,21 +339,24 @@
             body: JSON.stringify(dataBaru)
         })
         .then(() => {
+            // Tambahkan juga ke memori lokal
+            database.push(dataBaru);
+            localStorage.setItem('databaseDesain', JSON.stringify(database));
+
             btnSubmit.innerText = "Daftar";
             btnSubmit.disabled = false;
             this.reset();
             document.getElementById('searchInput').value = '';
-            renderTable(database);
+            
+            // Re-fetch data server agar seragam
+            setTimeout(muatDataDariSheets, 1000);
             goToSlide(2);
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Gagal mengirim ke Google Sheets, namun data tersimpan di browser.');
+            alert('Terjadi kesalahan saat mengirim data.');
             btnSubmit.innerText = "Daftar";
             btnSubmit.disabled = false;
-            this.reset();
-            renderTable(database);
-            goToSlide(2);
         });
     });
 
@@ -390,12 +410,12 @@
     }
 
     function hapusSemuaData() {
-        if (confirm('Apakah Anda yakin ingin menghapus seluruh data pendaftaran?')) {
+        if (confirm('Apakah Anda yakin ingin menghapus seluruh data pendaftaran di browser ini?')) {
             database = [];
             localStorage.removeItem('databaseDesain');
             renderTable(database);
             document.getElementById('totalDokumen').innerText = 0;
-            alert('Semua data berhasil dihapus.');
+            alert('Data di tampilan browser berhasil dibersihkan.');
         }
     }
 
