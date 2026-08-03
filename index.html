@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Permintaan Desain Kemasan Obat</title>
-    <!-- Library ExcelJS & FileSaver untuk membuat file Excel profesional dengan Style/Border/Color -->
+    <!-- Library ExcelJS & FileSaver -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
@@ -207,7 +207,7 @@
             </div>
 
             <div class="btn-group" style="justify-content: flex-end;">
-                <button type="submit" class="btn btn-primary">Daftar</button>
+                <button type="submit" id="btnSubmit" class="btn btn-primary">Daftar</button>
             </div>
         </form>
     </div>
@@ -263,15 +263,16 @@
 </div>
 
 <script>
-    // Ambil data awal dari localStorage jika ada
+    // ⚠️ MASUKKAN LINK SCRIPT GOOGLE ANDA DI BAWAH INI ⚠️
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby_m3EdzspSCZwSnEzDwM_H_VIW4UC1vIKgSlkaWK5A-WrCgZf_MEHZi1QGuQ_YZIcN/exec";
+
+    // Ambil data awal dari localStorage
     let database = JSON.parse(localStorage.getItem('databaseDesain')) || [];
 
-    // Saat halaman selesai dimuat, langsung render tabel data yang tersimpan
     window.onload = function() {
         renderTable(database);
     };
 
-    // Format Tanggal YYYY-MM-DD ke DD / MM / YYYY
     function formatDate(dateStr) {
         if(!dateStr) return "____ / ____ / 2026";
         const d = new Date(dateStr);
@@ -281,7 +282,6 @@
         return `${day} / ${month} / ${year}`;
     }
 
-    // Navigasi Slide
     function goToSlide(slideIndex) {
         document.querySelectorAll('.slide').forEach(slide => slide.classList.remove('active'));
         document.querySelectorAll('.step-tab').forEach(tab => tab.classList.remove('active'));
@@ -294,31 +294,52 @@
         }
     }
 
-    // Submit Form
+    // Submit Form (Sekarang terhubung ke Google Sheets & Browser)
     document.getElementById('formPengajuan').addEventListener('submit', function(e) {
         e.preventDefault();
 
-        const noDokumen = document.getElementById('noDokumen').value.trim();
-        const namaPemohon = document.getElementById('namaPemohon').value.trim();
-        const pemohonDept = document.getElementById('pemohonDept').value.trim();
-        const tglPengajuan = document.getElementById('tglPengajuan').value;
-        const targetDeadline = document.getElementById('targetDeadline').value;
+        const btnSubmit = document.getElementById('btnSubmit');
+        btnSubmit.innerText = "Mengirim...";
+        btnSubmit.disabled = true;
 
-        // Simpan data ke dalam Array database
-        database.push({ noDokumen, namaPemohon, pemohonDept, tglPengajuan, targetDeadline });
-        
-        // Simpan permanen di browser
+        const dataBaru = {
+            noDokumen: document.getElementById('noDokumen').value.trim(),
+            namaPemohon: document.getElementById('namaPemohon').value.trim(),
+            pemohonDept: document.getElementById('pemohonDept').value.trim(),
+            tglPengajuan: document.getElementById('tglPengajuan').value,
+            targetDeadline: document.getElementById('targetDeadline').value
+        };
+
+        // 1. Simpan ke Local Storage (Browser)
+        database.push(dataBaru);
         localStorage.setItem('databaseDesain', JSON.stringify(database));
 
-        this.reset();
-
-        // Render tabel & bersihkan input pencarian
-        document.getElementById('searchInput').value = '';
-        renderTable(database);
-        goToSlide(2);
+        // 2. Kirim Data ke Google Sheets melalui Apps Script
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataBaru)
+        })
+        .then(() => {
+            btnSubmit.innerText = "Daftar";
+            btnSubmit.disabled = false;
+            this.reset();
+            document.getElementById('searchInput').value = '';
+            renderTable(database);
+            goToSlide(2);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Gagal mengirim ke Google Sheets, namun data tersimpan di browser.');
+            btnSubmit.innerText = "Daftar";
+            btnSubmit.disabled = false;
+            this.reset();
+            renderTable(database);
+            goToSlide(2);
+        });
     });
 
-    // Render Table
     function renderTable(dataArray) {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
@@ -343,7 +364,6 @@
         });
     }
 
-    // Filter Search (Pencarian Realtime serba fleksibel)
     function filterData() {
         const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
 
@@ -369,7 +389,6 @@
         renderTable(filteredData);
     }
 
-    // Hapus Semua Data jika ingin reset
     function hapusSemuaData() {
         if (confirm('Apakah Anda yakin ingin menghapus seluruh data pendaftaran?')) {
             database = [];
@@ -380,7 +399,6 @@
         }
     }
 
-    // Export Form Excel Persis Template
     async function exportToExcel() {
         if (database.length === 0) {
             alert('Belum ada data pendaftaran untuk di-export!');
@@ -576,7 +594,7 @@
         sheet.getCell('E36').value = '( Registrasi )\nTgl: ________';
         sheet.getCell('G36').value = '( Plant Manager )\nTgl: ________';
 
-        // Terapkan Border & Alignment ke semua cell di dalam Form (B4:G36)
+        // Terapkan Border & Alignment
         for (let r = 4; r <= 36; r++) {
             for (let c = 2; c <= 7; c++) {
                 const cell = sheet.getCell(r, c);
