@@ -122,17 +122,28 @@
             font-size: 14px;
         }
 
+        .btn:disabled {
+            background-color: #cccccc !important;
+            color: #666666 !important;
+            cursor: not-allowed;
+        }
+
         .btn-primary { background-color: #0d6efd; color: white; }
-        .btn-primary:hover { background-color: #0b5ed7; }
+        .btn-primary:hover:not(:disabled) { background-color: #0b5ed7; }
 
         .btn-success { background-color: #198754; color: white; }
-        .btn-success:hover { background-color: #157347; }
+        .btn-success:hover:not(:disabled) { background-color: #157347; }
 
         .btn-secondary { background-color: #6c757d; color: white; }
-        .btn-secondary:hover { background-color: #5c636a; }
+        .btn-secondary:hover:not(:disabled) { background-color: #5c636a; }
 
         .btn-danger { background-color: #dc3545; color: white; }
-        .btn-danger:hover { background-color: #bb2d3b; }
+        .btn-danger:hover:not(:disabled) { background-color: #bb2d3b; }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
 
         /* Table Styles */
         .search-box {
@@ -166,6 +177,27 @@
             text-align: center;
             color: #888;
             padding: 20px;
+        }
+
+        /* Pagination Styling */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+            padding: 10px 0;
+            border-top: 1px solid #eee;
+        }
+
+        .pagination-info {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
     </style>
 </head>
@@ -237,6 +269,16 @@
             </table>
         </div>
 
+        <!-- Tombol Paginasi (Halaman 10 Data) -->
+        <div class="pagination-container">
+            <div class="pagination-info" id="paginationInfo">Menampilkan 0 - 0 dari 0 data</div>
+            <div class="pagination-controls">
+                <button class="btn btn-secondary btn-sm" id="btnPrevPage" onclick="prevPage()">◀ Sebelumnya</button>
+                <span id="pageIndicator" style="font-size: 13px; font-weight: bold; margin: 0 5px;">Halaman 1</span>
+                <button class="btn btn-secondary btn-sm" id="btnNextPage" onclick="nextPage()">Selanjutnya ▶</button>
+            </div>
+        </div>
+
         <div class="btn-group">
             <button class="btn btn-secondary" onclick="goToSlide(1)">Kembali (Tambah Data)</button>
             <button class="btn btn-primary" onclick="goToSlide(3)">Selanjutnya</button>
@@ -267,6 +309,11 @@
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzGXD6jSR47VIKhQwiDF7FrAtEzFx7MMOU6DpA_m-vli0qi3EQ2fkN3E07VzcVC11ZO/exec";
 
     let database = JSON.parse(localStorage.getItem('databaseDesain')) || [];
+    let filteredDatabase = [];
+    
+    // Konfigurasi Paginasi
+    let currentPage = 1;
+    const rowsPerPage = 10;
 
     // Saat halaman dibuka, langsung muat data dari Google Sheets secara Online
     window.onload = function() {
@@ -285,11 +332,11 @@
                     database = data;
                     localStorage.setItem('databaseDesain', JSON.stringify(database));
                 }
-                renderTable(database);
+                filterData();
             })
             .catch(error => {
                 console.error('Gagal memuat data dari server:', error);
-                renderTable(database); // Gunakan cadangan lokal jika gagal koneksi
+                filterData(); // Gunakan cadangan lokal jika gagal koneksi
             });
     }
 
@@ -360,19 +407,36 @@
         });
     });
 
-    function renderTable(dataArray) {
+    function renderTable() {
         const tableBody = document.getElementById('tableBody');
         tableBody.innerHTML = '';
 
-        if (!dataArray || dataArray.length === 0) {
+        if (!filteredDatabase || filteredDatabase.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="6" class="empty-msg">Data tidak ditemukan / belum ada data pendaftaran.</td></tr>`;
+            document.getElementById('paginationInfo').innerText = `Menampilkan 0 dari 0 data`;
+            document.getElementById('pageIndicator').innerText = `Halaman 1 dari 1`;
+            document.getElementById('btnPrevPage').disabled = true;
+            document.getElementById('btnNextPage').disabled = true;
             return;
         }
 
-        dataArray.forEach((item, index) => {
+        // Hitung batasan indeks data per halaman
+        const totalItems = filteredDatabase.length;
+        const totalPages = Math.ceil(totalItems / rowsPerPage);
+
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, totalItems);
+
+        const currentData = filteredDatabase.slice(startIndex, endIndex);
+
+        currentData.forEach((item, index) => {
+            const rowNumber = startIndex + index + 1;
             const row = `
                 <tr>
-                    <td>${index + 1}</td>
+                    <td>${rowNumber}</td>
                     <td><b>${item.noDokumen}</b></td>
                     <td>${item.namaPemohon}</td>
                     <td>${item.pemohonDept}</td>
@@ -382,38 +446,62 @@
             `;
             tableBody.innerHTML += row;
         });
+
+        // Update Info Paginasi
+        document.getElementById('paginationInfo').innerText = `Menampilkan ${startIndex + 1} - ${endIndex} dari ${totalItems} data`;
+        document.getElementById('pageIndicator').innerText = `Halaman ${currentPage} dari ${totalPages}`;
+
+        // Atur tombol Aktif / Disabled
+        document.getElementById('btnPrevPage').disabled = (currentPage === 1);
+        document.getElementById('btnNextPage').disabled = (currentPage === totalPages);
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            renderTable();
+        }
+    }
+
+    function nextPage() {
+        const totalPages = Math.ceil(filteredDatabase.length / rowsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderTable();
+        }
     }
 
     function filterData() {
         const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
 
         if (keyword === '') {
-            renderTable(database);
-            return;
+            filteredDatabase = [...database];
+        } else {
+            filteredDatabase = database.filter(item => {
+                const nama = (item.namaPemohon || '').toLowerCase();
+                const noDok = (item.noDokumen || '').toLowerCase();
+                const dept = (item.pemohonDept || '').toLowerCase();
+                const tglAwal = formatDate(item.tglPengajuan).toLowerCase();
+                const tglAkhir = formatDate(item.targetDeadline).toLowerCase();
+
+                return nama.includes(keyword) ||
+                       noDok.includes(keyword) ||
+                       dept.includes(keyword) ||
+                       tglAwal.includes(keyword) ||
+                       tglAkhir.includes(keyword);
+            });
         }
 
-        const filteredData = database.filter(item => {
-            const nama = (item.namaPemohon || '').toLowerCase();
-            const noDok = (item.noDokumen || '').toLowerCase();
-            const dept = (item.pemohonDept || '').toLowerCase();
-            const tglAwal = formatDate(item.tglPengajuan).toLowerCase();
-            const tglAkhir = formatDate(item.targetDeadline).toLowerCase();
-
-            return nama.includes(keyword) ||
-                   noDok.includes(keyword) ||
-                   dept.includes(keyword) ||
-                   tglAwal.includes(keyword) ||
-                   tglAkhir.includes(keyword);
-        });
-
-        renderTable(filteredData);
+        currentPage = 1; // Reset ke halaman 1 tiap pencarian
+        renderTable();
     }
 
     function hapusSemuaData() {
         if (confirm('Apakah Anda yakin ingin menghapus seluruh data pendaftaran di browser ini?')) {
             database = [];
+            filteredDatabase = [];
             localStorage.removeItem('databaseDesain');
-            renderTable(database);
+            filterData();
             document.getElementById('totalDokumen').innerText = 0;
             alert('Data di tampilan browser berhasil dibersihkan.');
         }
