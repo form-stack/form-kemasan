@@ -1,1110 +1,674 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Artwork & Proof Print - Triman</title>
-  <style>
-    :root {
-      --primary: #2b3a4a;
-      --primary-light: #3a4d62;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --bg-main: #eef2f5;
-      --bg-card: #ffffff;
-      --text-dark: #1e293b;
-      --text-muted: #64748b;
-      --border-color: #e2e8f0;
-      --sidebar-width: 260px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Permintaan Desain Kemasan Obat</title>
+    <!-- Library ExcelJS & FileSaver -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
 
-    * { 
-      box-sizing: border-box; 
-      font-family: 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, Roboto, sans-serif; 
-      margin: 0;
-      padding: 0;
-    }
+        body {
+            background-color: #f4f7f6;
+            padding: 30px;
+            display: flex;
+            justify-content: center;
+        }
 
-    body { 
-      background-color: var(--bg-main); 
-      color: var(--text-dark);
-      display: flex;
-      min-height: 100vh;
-    }
+        .container {
+            width: 100%;
+            max-width: 850px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
 
-    /* SIDEBAR NAVIGATION */
-    .sidebar {
-      width: var(--sidebar-width);
-      background-color: var(--primary);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      z-index: 100;
-      box-shadow: 4px 0 15px rgba(0,0,0,0.05);
-    }
+        /* Header / Stepper UI */
+        .stepper {
+            display: flex;
+            background-color: #0d6efd;
+            color: white;
+            text-align: center;
+        }
 
-    .sidebar-header {
-      padding: 24px 20px;
-      background: #ffffff;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+        .step-tab {
+            flex: 1;
+            padding: 15px 10px;
+            font-weight: bold;
+            opacity: 0.6;
+            transition: 0.3s;
+            border-bottom: 4px solid transparent;
+        }
 
-    .sidebar-header img {
-      height: 48px;
-      width: auto;
-      object-fit: contain;
-    }
+        .step-tab.active {
+            opacity: 1;
+            border-bottom: 4px solid #ffca28;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
 
-    .sidebar-section-title {
-      padding: 20px 20px 8px 20px;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: #94a3b8;
-      font-weight: 700;
-    }
+        /* Slide Content */
+        .slide {
+            display: none;
+            padding: 30px;
+        }
 
-    .nav-list {
-      list-style: none;
-      padding: 0 12px;
-    }
+        .slide.active {
+            display: block;
+        }
 
-    .nav-item {
-      margin-bottom: 4px;
-    }
+        h2 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
 
-    .nav-link {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 16px;
-      color: #cbd5e1;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
+        /* Form Elements */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
 
-    .nav-link:hover {
-      background-color: rgba(255, 255, 255, 0.08);
-      color: #ffffff;
-    }
+        .form-group {
+            margin-bottom: 15px;
+        }
 
-    .nav-link.active {
-      background-color: var(--accent);
-      color: #ffffff;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
 
-    .nav-link .icon-svg {
-      width: 20px;
-      height: 20px;
-      fill: currentColor;
-    }
+        input[type="text"],
+        input[type="date"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+        }
 
-    /* MAIN CONTENT AREA */
-    .main-wrapper {
-      margin-left: var(--sidebar-width);
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
+        input:focus {
+            outline: none;
+            border-color: #0d6efd;
+            box-shadow: 0 0 5px rgba(13, 110, 253, 0.3);
+        }
 
-    .top-header {
-      background: var(--bg-card);
-      height: 70px;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 32px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-    }
+        /* Buttons */
+        .btn-group {
+            margin-top: 25px;
+            display: flex;
+            justify-content: space-between;
+        }
 
-    .top-header h1 {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+            font-size: 14px;
+        }
 
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+        .btn-primary { background-color: #0d6efd; color: white; }
+        .btn-primary:hover { background-color: #0b5ed7; }
 
-    .avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight:bold;
-      color: var(--primary);
-    }
+        .btn-success { background-color: #198754; color: white; }
+        .btn-success:hover { background-color: #157347; }
 
-    .container { 
-      padding: 32px; 
-      max-width: 1200px;
-      width: 100%;
-    }
+        .btn-secondary { background-color: #6c757d; color: white; }
+        .btn-secondary:hover { background-color: #5c636a; }
 
-    .page { display: none; }
-    .page.active { 
-      display: block; 
-      animation: fadeIn 0.3s ease-in-out;
-    }
+        .btn-danger { background-color: #dc3545; color: white; }
+        .btn-danger:hover { background-color: #bb2d3b; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+        /* Table Styles */
+        .search-box {
+            margin-bottom: 15px;
+        }
 
-    .card {
-      background: var(--bg-card);
-      border-radius: 12px;
-      padding: 28px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03), 0 2px 4px -1px rgba(0,0,0,0.02);
-      margin-bottom: 24px;
-    }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
 
-    .card-title {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--text-dark);
-      margin-bottom: 6px;
-    }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
 
-    .card-subtitle {
-      font-size: 14px;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-    }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
 
-    /* MENU GRID IN DASHBOARD */
-    .menu-grid { 
-      display: grid; 
-      grid-template-columns: repeat(4, 1fr); 
-      gap: 20px; 
-    }
+        th {
+            background-color: #f8f9fa;
+            color: #333;
+        }
 
-    @media (max-width: 1024px) {
-      .menu-grid { grid-template-columns: repeat(2, 1fr); }
-    }
+        tr:nth-child(even) { background-color: #f9f9f9; }
 
-    .menu-card { 
-      background: #ffffff; 
-      border: 1px solid var(--border-color); 
-      border-radius: 12px; 
-      padding: 24px 20px; 
-      text-align: left; 
-      cursor: pointer; 
-      transition: all 0.25s ease; 
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .menu-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 4px;
-      background: transparent;
-      transition: background 0.25s ease;
-    }
-
-    .menu-card:hover { 
-      transform: translateY(-4px); 
-      box-shadow: 0 12px 20px -5px rgba(0,0,0,0.08); 
-      border-color: #cbd5e1;
-    }
-
-    .menu-card:hover::before {
-      background: var(--accent);
-    }
-
-    .menu-card .icon-wrapper {
-      width: 48px;
-      height: 48px;
-      border-radius: 10px;
-      background: #eff6ff;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 16px;
-    }
-
-    .menu-card h3 { 
-      margin: 0 0 6px 0; 
-      color: var(--text-dark); 
-      font-size: 16px; 
-      font-weight: 600;
-    }
-
-    .menu-card p { 
-      font-size: 13px; 
-      color: var(--text-muted); 
-      margin: 0; 
-      line-height: 1.4;
-    }
-
-    /* FORM STYLES */
-    .form-group { margin-bottom: 20px; }
-    label { 
-      display: block; 
-      font-weight: 600; 
-      margin-bottom: 8px; 
-      color: var(--text-dark); 
-      font-size: 13px;
-    }
-
-    input, select { 
-      width: 100%; 
-      padding: 11px 14px; 
-      border: 1px solid var(--border-color); 
-      border-radius: 8px; 
-      font-size: 14px; 
-      background-color: #f8fafc;
-      color: var(--text-dark);
-      transition: all 0.2s;
-    }
-
-    input:focus, select:focus {
-      outline: none;
-      border-color: var(--accent);
-      background-color: #ffffff;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-
-    /* BUTTONS */
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .btn { 
-      padding: 10px 20px; 
-      border: none; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      font-size: 14px; 
-      font-weight: 600; 
-      text-decoration: none; 
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease; 
-    }
-
-    .btn-primary { background-color: var(--accent); color: white; }
-    .btn-primary:hover { background-color: var(--accent-hover); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); }
-
-    .btn-success { background-color: #10b981; color: white; }
-    .btn-success:hover { background-color: #059669; }
-
-    .btn-warning { background-color: #f59e0b; color: white; }
-    .btn-warning:hover { background-color: #d97706; }
-
-    .btn-secondary { background-color: #f1f5f9; color: #475569; border: 1px solid var(--border-color); }
-    .btn-secondary:hover { background-color: #e2e8f0; color: var(--text-dark); }
-
-    .btn-download { background-color: #8b5cf6; color: white; }
-    .btn-download:hover { background-color: #7c3aed; }
-
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    /* TAB & TABLES */
-    .tab-container { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
-    .tab-btn { 
-      padding: 10px 20px; 
-      text-align: center; 
-      background: transparent; 
-      border: none;
-      border-radius: 6px; 
-      font-weight: 600; 
-      font-size: 14px; 
-      cursor: pointer; 
-      color: var(--text-muted); 
-      transition: all 0.2s ease; 
-    }
-    .tab-btn:hover { background: #f1f5f9; color: var(--text-dark); }
-    .tab-btn.active-artwork { background-color: #eff6ff; color: var(--accent); }
-    .tab-btn.active-proof { background-color: #f3e8ff; color: #7c3aed; }
-
-    .table-responsive {
-      overflow-x: auto;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-    }
-
-    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    th, td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
-    th { background-color: #f8fafc; color: #475569; font-weight: 600; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
-    
-    tbody tr:last-child td { border-bottom: none; }
-    tbody tr:hover { background-color: #f8fafc; }
-
-    /* BADGES */
-    .badge { padding: 4px 10px; border-radius: 20px; font-weight: 600; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; }
-    .badge-pending { background-color: #fef3c7; color: #92400e; }
-    .badge-done { background-color: #d1fae5; color: #065f46; }
-    .badge-new { background-color: #f1f5f9; color: #475569; }
-    
-    .badge-artwork { background-color: #dbeafe; color: #1e40af; }
-    .badge-proof { background-color: #f3e8ff; color: #6b21a8; }
-  </style>
+        .empty-msg {
+            text-align: center;
+            color: #888;
+            padding: 20px;
+        }
+    </style>
 </head>
 <body>
 
-  <!-- SIDEBAR NAVIGATION -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <img src="form%20aw/LOGO%20TRIMAN.jpg" alt="Logo Triman">
+<div class="container">
+    <!-- Indikator Slide -->
+    <div class="stepper">
+        <div class="step-tab active" id="tab-1">1. Pendaftaran</div>
+        <div class="step-tab" id="tab-2">2. Daftar & Cari Data</div>
+        <div class="step-tab" id="tab-3">3. Export Excel</div>
     </div>
 
-    <div class="sidebar-section-title">Alur Kerja Aktif</div>
-    <ul class="nav-list">
-      <li class="nav-item">
-        <a class="nav-link active" id="navMenu" onclick="switchPage('pageMenu')">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8v-10h-8v10zm0-18v6h8V3h-8z"/></svg>
-           Dashboard
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="navArtwork" onclick="openForm('Artwork')">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-           Berkas Artwork
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="navProof" onclick="openForm('Proof Print')">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-           Berkas Proof Print
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="navUpdate" onclick="openUpdateForm()">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
-           Update ACC Bagian
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" id="navMonitoring" onclick="openMonitoring()">
-          <svg class="icon-svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
-           Monitoring Status
-        </a>
-      </li>
-    </ul>
-  </aside>
-
-  <!-- MAIN WRAPPER -->
-  <div class="main-wrapper">
-    
-    <header class="top-header">
-      <h1 id="topHeaderTitle">Artwork & Proofprint Management System (APMS)</h1>
-      <div class="user-profile">
-        <div class="avatar">TR</div>
-      </div>
-    </header>
-
-    <div class="container">
-
-      <!-- MENU UTAMA / DASHBOARD -->
-      <div id="pageMenu" class="page active">
-        <div class="card">
-          <div class="card-title">Selamat Datang di Alur Kerja Sistem</div>
-          <div class="card-subtitle">Silakan pilih menu di bawah ini atau gunakan navigasi di sebelah kiri:</div>
-          
-          <div class="menu-grid">
-            <div class="menu-card" onclick="openForm('Artwork')">
-              <div>
-                <div class="icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+    <!-- SLIDE 1: FORM PENDAFTARAN -->
+    <div class="slide active" id="slide-1">
+        <h2>Form Permintaan Desain Kemasan Obat</h2>
+        <form id="formPengajuan">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="noDokumen">No. Dokumen:</label>
+                    <input type="text" id="noDokumen" placeholder="Contoh: FRM/DSN/2026/001" required>
                 </div>
-                <h3>Berkas Artwork</h3>
-                <p>Pendaftaran & pengajuan berkas artwork baru</p>
-              </div>
-            </div>
-
-            <div class="menu-card" onclick="openForm('Proof Print')">
-              <div>
-                <div class="icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M9 15l2 2 4-4"></path></svg>
+                <div class="form-group">
+                    <label for="namaPemohon">Nama Pemohon:</label>
+                    <input type="text" id="namaPemohon" placeholder="Contoh: Budi Santoso" required>
                 </div>
-                <h3>Berkas Proof Print</h3>
-                <p>Pendaftaran berkas proof print baru</p>
-              </div>
-            </div>
-
-            <div class="menu-card" onclick="openUpdateForm()">
-              <div>
-                <div class="icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                <div class="form-group">
+                    <label for="pemohonDept">Departemen:</label>
+                    <input type="text" id="pemohonDept" placeholder="Contoh: R&D / Marketing" required>
                 </div>
-                <h3>Update ACC</h3>
-                <p>Lanjutkan isi tanggal ACC di cell produk tersedia</p>
-              </div>
-            </div>
-
-            <div class="menu-card" onclick="openMonitoring()">
-              <div>
-                <div class="icon-wrapper">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                <div class="form-group">
+                    <label for="tglPengajuan">Tanggal Pengajuan:</label>
+                    <input type="date" id="tglPengajuan" required>
                 </div>
-                <h3>Monitoring</h3>
-                <p>Lacak posisi bagian & status persetujuan produk</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- FORM PENDAFTARAN BARU -->
-      <div id="pageFormBaru" class="page">
-        <div class="card">
-          <div class="btn-group">
-            <button class="btn btn-secondary" onclick="switchPage('pageMenu')">← Kembali ke Dashboard</button>
-            <a href="https://drive.google.com/drive/u/2/folders/1tBI1G2ERL42K9MD7tR6WImzki5l0DFzs" target="_blank" class="btn btn-download">📁 Unduh Form (Google Drive)</a>
-          </div>
-
-          <div class="card-title" id="formTitle">Form Pendaftaran</div>
-          <div class="card-subtitle">Lengkapi formulir di bawah ini untuk menambahkan berkas ke sistem.</div>
-
-          <form id="artworkForm">
-            <input type="hidden" id="kategori">
-
-            <div id="groupEmail" class="form-group">
-              <label for="email">Pengirim Email</label>
-              <input type="text" id="email" placeholder="Contoh: purchasing / herlina">
+                <div class="form-group">
+                    <label for="targetDeadline">Target Deadline:</label>
+                    <input type="date" id="targetDeadline" required>
+                </div>
             </div>
 
-            <div id="groupJam" class="form-group">
-              <label for="jam">Jam Input</label>
-              <input type="time" id="jam">
+            <div class="btn-group" style="justify-content: flex-end;">
+                <button type="submit" id="btnSubmit" class="btn btn-primary">Daftar</button>
             </div>
-
-            <div class="form-group">
-              <label for="namaProduk">Nama Produk</label>
-              <input type="text" id="namaProduk" placeholder="Contoh: Domperidone / Meloxicam" required>
-            </div>
-
-            <div class="form-group">
-              <label for="typeFile">Type File</label>
-              <input type="text" id="typeFile" placeholder="Contoh: Brosur / Dus / Foil / Amplop / Etiket" required>
-            </div>
-
-            <div class="form-group">
-              <label for="percetakanTanggal">Percetakan / Tanggal Input</label>
-              <input type="text" id="percetakanTanggal" placeholder="Contoh: Cemerlang / 15-08-2026" required>
-            </div>
-
-            <div style="margin-top: 24px;">
-              <button type="submit" class="btn btn-success" id="btnSubmit">Kirim Data Baru →</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- FORM UPDATE TANGGAL ACC -->
-      <div id="pageUpdateProgress" class="page">
-        <div class="card">
-          <div class="btn-group">
-            <button class="btn btn-secondary" onclick="switchPage('pageMenu')">← Kembali ke Dashboard</button>
-          </div>
-
-          <div class="card-title">Update ACC Bagian / Proses Berjalan</div>
-          <div class="card-subtitle">Pilih produk dan perbarui status persetujuan tanggal ACC pada bagian terkait.</div>
-
-          <form id="updateForm">
-            <div class="form-group">
-              <label for="updateKategoriSelect">Pilih Kategori Process</label>
-              <select id="updateKategoriSelect" onchange="onCategoryOrTypeChange()" required>
-                <option value="">-- Pilih Kategori --</option>
-                <option value="Artwork">Artwork</option>
-                <option value="Proof Print">Proof Print</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="updateTypeFileInput">Type File</label>
-              <input type="text" id="updateTypeFileInput" placeholder="Contoh: Foil, Brosur, Etiket, Dus..." oninput="onCategoryOrTypeChange()" required>
-            </div>
-
-            <div class="form-group">
-              <label for="updateNamaProdukInput">Ketik & Pilih Produk</label>
-              <input type="text" id="updateNamaProdukInput" list="produkListOptions" placeholder="🔍 Ketik nama produk..." oninput="updateTahapOptions()" autocomplete="off" required>
-              <datalist id="produkListOptions"></datalist>
-            </div>
-
-            <div class="form-group">
-              <label for="posisiTahap">Pilih Bagian yang Melanjutkan ACC</label>
-              <select id="posisiTahap" required>
-                <option value="">-- Pilih Berkas / Produk Terlebih Dahulu --</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="tanggalUpdate">Tanggal ACC Bagian</label>
-              <input type="date" id="tanggalUpdate" required>
-            </div>
-
-            <div style="margin-top: 24px;">
-              <button type="submit" class="btn btn-warning" id="btnUpdateSubmit">Update Tanggal di Cell 🔄</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- MONITORING -->
-      <div id="pageMonitoring" class="page">
-        <div class="card">
-          <div class="btn-group" style="justify-content: space-between; align-items: center;">
-            <div style="display: flex; gap: 10px;">
-              <button class="btn btn-secondary" onclick="switchPage('pageMenu')">← Kembali ke Dashboard</button>
-              <button class="btn btn-success" onclick="forceRefreshData()">🔄 Refresh Data</button>
-            </div>
-          </div>
-
-          <div class="card-title">Monitoring Status Produk</div>
-          <div class="card-subtitle">Pantau seluruh pergerakan berkas dan status persetujuan secara real-time.</div>
-
-          <div class="tab-container">
-            <button id="tabArtwork" class="tab-btn active-artwork" onclick="switchMonitoringTab('Artwork')">
-              📄 Data Artwork
-            </button>
-            <button id="tabProof" class="tab-btn" onclick="switchMonitoringTab('Proof Print')">
-              📑 Data Proof Print
-            </button>
-          </div>
-          
-          <div class="form-group">
-            <input type="text" id="searchBox" placeholder="🔍 Cari Nama Produk, Type File, atau Kategori..." onkeyup="filterTable()">
-          </div>
-
-          <!-- TABEL ARTWORK -->
-          <div id="containerArtwork" class="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 50px;">No</th>
-                  <th>Kategori</th>
-                  <th>Nama Produk</th>
-                  <th>Type File</th>
-                  <th>Percetakan / Tgl Input</th>
-                  <th>Status Progress (Posisi Bagian & Tanggal ACC)</th>
-                </tr>
-              </thead>
-              <tbody id="tableBodyArtwork">
-                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Memuat data Artwork...</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <!-- TABEL PROOF PRINT -->
-          <div id="containerProof" class="table-responsive" style="display: none;">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 50px;">No</th>
-                  <th>Kategori</th>
-                  <th>Nama Produk</th>
-                  <th>Type File</th>
-                  <th>Percetakan / Tgl Input</th>
-                  <th>Status Progress (Posisi Bagian & Tanggal ACC)</th>
-                </tr>
-              </thead>
-              <tbody id="tableBodyProof">
-                <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Memuat data Proof Print...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
+        </form>
     </div>
-  </div>
+
+    <!-- SLIDE 2: DAFTAR DATA & PENCARIAN -->
+    <div class="slide" id="slide-2">
+        <h2>Daftar Permintaan Desain</h2>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="🔍 Cari berdasarkan Nama, No Dokumen, Dept, Tanggal..." oninput="filterData()">
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>No Dokumen</th>
+                        <th>Nama Pemohon</th>
+                        <th>Departemen</th>
+                        <th>Tgl Pengajuan</th>
+                        <th>Target Deadline</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Data dari JS akan dirender di sini -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToSlide(1)">Kembali (Tambah Data)</button>
+            <button class="btn btn-primary" onclick="goToSlide(3)">Selanjutnya</button>
+        </div>
+    </div>
+
+    <!-- SLIDE 3: PREVIEW & DOWNLOAD EXCEL -->
+    <div class="slide" id="slide-3">
+        <h2>Export Data ke Format Excel Form</h2>
+        <p style="margin-bottom: 20px; color: #555;">Klik tombol di bawah untuk mengunduh Form Excel Permintaan Desain Kemasan Obat yang persis dengan template resmi berdasarkan data pendaftaran terbaru.</p>
+        
+        <div style="background-color: #e9ecef; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+            <p><strong>Jumlah Total Pengajuan Terdaftar:</strong> <span id="totalDokumen">0</span> Dokumen</p>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-secondary" onclick="goToSlide(2)">Kembali</button>
+            <div>
+                <button class="btn btn-danger" onclick="hapusSemuaData()" style="margin-right: 10px;">🗑️ Hapus Semua Data</button>
+                <button class="btn btn-success" onclick="exportToExcel()">📊 Download Form Excel (.xlsx)</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzgImpeolOmk9s3aeGe2fyGnYrAzuVmdQODQTuvIqZPliC8DETOEiZj-YDVLoEMg-9B/exec";
+    // ⚠️ MASUKKAN LINK GOOGLE APPS SCRIPT ANDA DI SINI ⚠️
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzGXD6jSR47VIKhQwiDF7FrAtEzFx7MMOU6DpA_m-vli0qi3EQ2fkN3E07VzcVC11ZO/exec";
 
-  const TAHAP_ARTWORK = [
-    "PUTRI", "DESIGN", "REGISTRASI", "R&D", "PRODUKSI", "QC", "QA", "PM", "KIRIM EMAIL SELESAI"
-  ];
+    let database = JSON.parse(localStorage.getItem('databaseDesain')) || [];
 
-  const TAHAP_PROOFPRINT = [
-    "TANGGAL PROOF", "PUTRI", "DESIGN", "REGISTRASI", "R&D", "PRODUKSI", "QC", "QA", "PM", "PURCH", "QA 2 SELESAI"
-  ];
-
-  let cachedSheetData = null;
-  let activeTab = "Artwork";
-
-  function updateSidebarState(pageId) {
-    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-    if (pageId === 'pageMenu') document.getElementById('navMenu').classList.add('active');
-    else if (pageId === 'pageFormBaru') {
-      const kat = document.getElementById("kategori").value;
-      if (kat === 'Proof Print') document.getElementById('navProof').classList.add('active');
-      else document.getElementById('navArtwork').classList.add('active');
-    }
-    else if (pageId === 'pageUpdateProgress') document.getElementById('navUpdate').classList.add('active');
-    else if (pageId === 'pageMonitoring') document.getElementById('navMonitoring').classList.add('active');
-  }
-
-  function switchPage(pageId) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById(pageId).classList.add('active');
-    updateSidebarState(pageId);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  function switchMonitoringTab(kategori) {
-    activeTab = kategori;
-    const tabArtwork = document.getElementById("tabArtwork");
-    const tabProof = document.getElementById("tabProof");
-    const containerArtwork = document.getElementById("containerArtwork");
-    const containerProof = document.getElementById("containerProof");
-
-    if (kategori === "Artwork") {
-      tabArtwork.classList.add("active-artwork");
-      tabProof.classList.remove("active-proof");
-      containerArtwork.style.display = "block";
-      containerProof.style.display = "none";
-    } else {
-      tabArtwork.classList.remove("active-artwork");
-      tabProof.classList.add("active-proof");
-      containerArtwork.style.display = "none";
-      containerProof.style.display = "block";
-    }
-
-    filterTable();
-  }
-
-  function openForm(kategori) {
-    document.getElementById("kategori").value = kategori;
-    document.getElementById("formTitle").innerText = "Form Input Berkas " + kategori;
-
-    const groupEmail = document.getElementById("groupEmail");
-    const groupJam = document.getElementById("groupJam");
-    const emailInput = document.getElementById("email");
-    const jamInput = document.getElementById("jam");
-
-    if (kategori === "Artwork") {
-      groupEmail.style.display = "block";
-      groupJam.style.display = "block";
-      emailInput.setAttribute("required", "required");
-      jamInput.setAttribute("required", "required");
-    } else {
-      groupEmail.style.display = "none";
-      groupJam.style.display = "none";
-      emailInput.removeAttribute("required");
-      jamInput.removeAttribute("required");
-      emailInput.value = "";
-      jamInput.value = "";
-    }
-
-    switchPage('pageFormBaru');
-  }
-
-  function openUpdateForm() {
-    switchPage('pageUpdateProgress');
-    loadProductDropdown();
-  }
-
-  function openMonitoring(defaultTab = null) {
-    switchPage('pageMonitoring');
-    if (defaultTab) {
-      switchMonitoringTab(defaultTab);
-    }
-    if (cachedSheetData) {
-      renderTableData(cachedSheetData);
-    }
-    fetchData();
-  }
-
-  function forceRefreshData() {
-    cachedSheetData = null;
-    fetchData();
-  }
-
-  function loadProductDropdown() {
-    if (cachedSheetData) {
-      populateDatalist(cachedSheetData);
-      return;
-    }
-
-    fetch(SCRIPT_URL + "?t=" + new Date().getTime())
-      .then(res => res.text())
-      .then(textData => {
-        try {
-          const data = JSON.parse(textData);
-          cachedSheetData = data;
-          populateDatalist(data);
-        } catch (e) {
-          console.error("Format data produk tidak valid:", e);
-        }
-      })
-      .catch(err => console.error("Gagal muat list produk:", err));
-  }
-
-  function onCategoryOrTypeChange() {
-    if (cachedSheetData) {
-      populateDatalist(cachedSheetData);
-    }
-    updateTahapOptions();
-  }
-
-  function populateDatalist(data) {
-    const datalist = document.getElementById("produkListOptions");
-    datalist.innerHTML = "";
-    if (!data || data.length < 3) return;
-
-    const selectedCategory = document.getElementById("updateKategoriSelect").value.toLowerCase();
-    const selectedType = document.getElementById("updateTypeFileInput").value.toLowerCase().trim();
-    const headers = data[1] || [];
-
-    for (let i = 2; i < data.length; i++) {
-      let row = data[i];
-      let nama = row[1];
-      let type = row[2] || "";
-      let categoryFound = isProofPrintRow(row, headers) ? "proof print" : "artwork";
-      
-      if (nama && nama.toString().trim() !== "" && nama.toString().toUpperCase() !== "NAMA PRODUK") {
-        
-        if (selectedCategory && categoryFound !== selectedCategory) {
-          continue;
-        }
-
-        if (selectedType && !type.toLowerCase().includes(selectedType)) {
-          continue;
-        }
-
-        let opt = document.createElement("option");
-        opt.value = `${nama} | ${type}`;
-        opt.label = `[${categoryFound.toUpperCase()}] ${nama} (${type})`;
-        datalist.appendChild(opt);
-      }
-    }
-  }
-
-  function isProofPrintRow(row, headers) {
-    if (row[13] && row[13].toString().trim() !== "") {
-      return true;
-    }
-
-    const rowStr = JSON.stringify(row).toLowerCase();
-    if (rowStr.includes("proof")) {
-      return true;
-    }
-
-    if (headers && headers.length > 0) {
-      for (let col = 4; col < row.length; col++) {
-        let hName = headers[col] ? headers[col].toString().toUpperCase() : "";
-        if ((hName.includes("PURCH") || hName.includes("QA 2")) && row[col] && row[col].toString().trim() !== "") {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  function updateTahapOptions() {
-    const categoryVal = document.getElementById("updateKategoriSelect").value;
-    const val = document.getElementById("updateNamaProdukInput").value;
-    const tahapSelect = document.getElementById("posisiTahap");
-
-    tahapSelect.innerHTML = "<option value=''>-- Pilih Bagian --</option>";
-    
-    let listTahap = TAHAP_ARTWORK;
-    if (categoryVal === "Proof Print" || val.toLowerCase().includes("proof")) {
-      listTahap = TAHAP_PROOFPRINT;
-    }
-
-    listTahap.forEach(tahap => {
-      let opt = document.createElement("option");
-      opt.value = tahap;
-      opt.textContent = tahap;
-      tahapSelect.appendChild(opt);
-    });
-  }
-
-  // EVENT SUBMIT PENDAFTARAN BARU
-  document.getElementById("artworkForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const btn = document.getElementById("btnSubmit");
-    const kategoriSubmitted = document.getElementById("kategori").value;
-
-    btn.disabled = true;
-    btn.innerText = "Mengirim...";
-
-    const payload = {
-      action: "CREATE",
-      kategori: kategoriSubmitted,
-      email: document.getElementById("email").value,
-      jam: document.getElementById("jam").value,
-      namaProduk: document.getElementById("namaProduk").value,
-      typeFile: document.getElementById("typeFile").value,
-      percetakanTanggal: document.getElementById("percetakanTanggal").value
+    // Saat halaman dibuka, langsung muat data dari Google Sheets secara Online
+    window.onload = function() {
+        muatDataDariSheets();
     };
 
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.text())
-    .then(resText => {
-      try {
-        const data = JSON.parse(resText);
-        alert("✅ " + (data.message || "Data produk baru berhasil tersimpan!"));
-      } catch(err) {
-        alert("✅ Data produk baru berhasil tersimpan!");
-      }
-      document.getElementById("artworkForm").reset();
-      btn.disabled = false;
-      btn.innerText = "Kirim Data Baru →";
-      cachedSheetData = null;
-      openMonitoring(kategoriSubmitted);
-    })
-    .catch(err => {
-      alert("✅ Data berhasil dikirim dan tersimpan di Sheets.");
-      document.getElementById("artworkForm").reset();
-      btn.disabled = false;
-      btn.innerText = "Kirim Data Baru →";
-      cachedSheetData = null;
-      openMonitoring(kategoriSubmitted);
+    // Fungsi mengambil data terpusat dari Google Sheets
+    function muatDataDariSheets() {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = `<tr><td colspan="6" class="empty-msg">🔄 Mengambil data terbaru dari server...</td></tr>`;
+
+        fetch(WEB_APP_URL)
+            .then(response => response.json())
+            .then(data => {
+                if (Array.isArray(data) && data.length > 0) {
+                    database = data;
+                    localStorage.setItem('databaseDesain', JSON.stringify(database));
+                }
+                renderTable(database);
+            })
+            .catch(error => {
+                console.error('Gagal memuat data dari server:', error);
+                renderTable(database); // Gunakan cadangan lokal jika gagal koneksi
+            });
+    }
+
+    function formatDate(dateStr) {
+        if(!dateStr) return "____ / ____ / 2026";
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day} / ${month} / ${year}`;
+    }
+
+    function goToSlide(slideIndex) {
+        document.querySelectorAll('.slide').forEach(slide => slide.classList.remove('active'));
+        document.querySelectorAll('.step-tab').forEach(tab => tab.classList.remove('active'));
+
+        document.getElementById(`slide-${slideIndex}`).classList.add('active');
+        document.getElementById(`tab-${slideIndex}`).classList.add('active');
+
+        if (slideIndex === 3) {
+            document.getElementById('totalDokumen').innerText = database.length;
+        }
+    }
+
+    // Submit Form
+    document.getElementById('formPengajuan').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const btnSubmit = document.getElementById('btnSubmit');
+        btnSubmit.innerText = "Mengirim...";
+        btnSubmit.disabled = true;
+
+        const dataBaru = {
+            noDokumen: document.getElementById('noDokumen').value.trim(),
+            namaPemohon: document.getElementById('namaPemohon').value.trim(),
+            pemohonDept: document.getElementById('pemohonDept').value.trim(),
+            tglPengajuan: document.getElementById('tglPengajuan').value,
+            targetDeadline: document.getElementById('targetDeadline').value
+        };
+
+        // Kirim Data ke Google Sheets
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataBaru)
+        })
+        .then(() => {
+            // Tambahkan juga ke memori lokal
+            database.push(dataBaru);
+            localStorage.setItem('databaseDesain', JSON.stringify(database));
+
+            btnSubmit.innerText = "Daftar";
+            btnSubmit.disabled = false;
+            this.reset();
+            document.getElementById('searchInput').value = '';
+            
+            // Re-fetch data server agar seragam
+            setTimeout(muatDataDariSheets, 1000);
+            goToSlide(2);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan saat mengirim data.');
+            btnSubmit.innerText = "Daftar";
+            btnSubmit.disabled = false;
+        });
     });
-  });
 
-  // EVENT SUBMIT UPDATE TANGGAL ACC
-  document.getElementById("updateForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const btn = document.getElementById("btnUpdateSubmit");
-    const selectedCategory = document.getElementById("updateKategoriSelect").value;
+    function renderTable(dataArray) {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
 
-    btn.disabled = true;
-    btn.innerText = "Memperbarui Cell...";
+        if (!dataArray || dataArray.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" class="empty-msg">Data tidak ditemukan / belum ada data pendaftaran.</td></tr>`;
+            return;
+        }
 
-    let rawDate = document.getElementById("tanggalUpdate").value;
-    let formattedDate = rawDate;
-    if (rawDate) {
-      let parts = rawDate.split("-");
-      formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        dataArray.forEach((item, index) => {
+            const row = `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><b>${item.noDokumen}</b></td>
+                    <td>${item.namaPemohon}</td>
+                    <td>${item.pemohonDept}</td>
+                    <td>${formatDate(item.tglPengajuan)}</td>
+                    <td>${formatDate(item.targetDeadline)}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
     }
 
-    const payload = {
-      action: "UPDATE",
-      kategori: selectedCategory,
-      typeFile: document.getElementById("updateTypeFileInput").value,
-      namaProduk: document.getElementById("updateNamaProdukInput").value,
-      posisiTahap: document.getElementById("posisiTahap").value,
-      tanggalUpdate: formattedDate
-    };
+    function filterData() {
+        const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
 
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.text())
-    .then(resText => {
-      try {
-        const data = JSON.parse(resText);
-        if (data.status === "success") {
-          alert("✅ " + data.message);
-        } else {
-          alert("⚠️ " + data.message);
+        if (keyword === '') {
+            renderTable(database);
+            return;
         }
-      } catch(e) {
-        alert("✅ Update tanggal berhasil diperbarui di Google Sheets!");
-      }
-      document.getElementById("updateForm").reset();
-      btn.disabled = false;
-      btn.innerText = "Update Tanggal di Cell 🔄";
-      cachedSheetData = null;
-      openMonitoring(selectedCategory);
-    })
-    .catch(err => {
-      alert("✅ Update tanggal berhasil diperbarui di Google Sheets!");
-      document.getElementById("updateForm").reset();
-      btn.disabled = false;
-      btn.innerText = "Update Tanggal di Cell 🔄";
-      cachedSheetData = null;
-      openMonitoring(selectedCategory);
-    });
-  });
 
-  function fetchData() {
-    const tbodyArtwork = document.getElementById("tableBodyArtwork");
-    const tbodyProof = document.getElementById("tableBodyProof");
-    
-    if (!cachedSheetData) {
-      tbodyArtwork.innerHTML = "<tr><td colspan='6' style='text-align: center; color: var(--text-muted);'>Memuat data Artwork...</td></tr>";
-      tbodyProof.innerHTML = "<tr><td colspan='6' style='text-align: center; color: var(--text-muted);'>Memuat data Proof Print...</td></tr>";
+        const filteredData = database.filter(item => {
+            const nama = (item.namaPemohon || '').toLowerCase();
+            const noDok = (item.noDokumen || '').toLowerCase();
+            const dept = (item.pemohonDept || '').toLowerCase();
+            const tglAwal = formatDate(item.tglPengajuan).toLowerCase();
+            const tglAkhir = formatDate(item.targetDeadline).toLowerCase();
+
+            return nama.includes(keyword) ||
+                   noDok.includes(keyword) ||
+                   dept.includes(keyword) ||
+                   tglAwal.includes(keyword) ||
+                   tglAkhir.includes(keyword);
+        });
+
+        renderTable(filteredData);
     }
 
-    fetch(SCRIPT_URL + "?t=" + new Date().getTime())
-      .then(res => res.text())
-      .then(textData => {
-        try {
-          const data = JSON.parse(textData);
-          cachedSheetData = data;
-          renderTableData(data);
-        } catch(e) {
-          console.error("Gagal parse data monitoring:", e);
+    function hapusSemuaData() {
+        if (confirm('Apakah Anda yakin ingin menghapus seluruh data pendaftaran di browser ini?')) {
+            database = [];
+            localStorage.removeItem('databaseDesain');
+            renderTable(database);
+            document.getElementById('totalDokumen').innerText = 0;
+            alert('Data di tampilan browser berhasil dibersihkan.');
         }
-      })
-      .catch(err => {
-        console.error("Gagal ambil data:", err);
-        if (!cachedSheetData) {
-          const errMsg = "<tr><td colspan='6' style='color:red; text-align:center;'>Gagal memuat data dari Google Sheets. Pastikan akses Web App diset ke 'Anyone'.</td></tr>";
-          tbodyArtwork.innerHTML = errMsg;
-          tbodyProof.innerHTML = errMsg;
-        }
-      });
-  }
-
-  function renderTableData(data) {
-    const tbodyArtwork = document.getElementById("tableBodyArtwork");
-    const tbodyProof = document.getElementById("tableBodyProof");
-    
-    tbodyArtwork.innerHTML = "";
-    tbodyProof.innerHTML = "";
-
-    if (!data || data.length < 3) {
-      const emptyMsg = "<tr><td colspan='6' style='text-align: center;'>Belum ada data terdaftar.</td></tr>";
-      tbodyArtwork.innerHTML = emptyMsg;
-      tbodyProof.innerHTML = emptyMsg;
-      return;
     }
 
-    const headers = data[1] || [];
-    let counterArtwork = 1;
-    let counterProof = 1;
+    async function exportToExcel() {
+        if (database.length === 0) {
+            alert('Belum ada data pendaftaran untuk di-export!');
+            return;
+        }
 
-    for (let i = 2; i < data.length; i++) {
-      const row = data[i];
+        const activeData = database[database.length - 1];
 
-      if (!row[1] || row[1].toString().trim() === "" || row[1].toString().toUpperCase() === "NAMA PRODUK") {
-        continue;
-      }
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Form Desain Kemasan');
 
-      const noCell = row[0] || (i - 1);
-      const nama = row[1];
-      const type = row[2] || "-";
-      const percetakan = row[3] || "-";
-      
-      const isProof = isProofPrintRow(row, headers);
-      const kategoriBadge = isProof 
-        ? `<span class="badge badge-proof">PROOF PRINT</span>`
-        : `<span class="badge badge-artwork">ARTWORK</span>`;
+        sheet.columns = [
+            { width: 4 },
+            { width: 22 },
+            { width: 22 },
+            { width: 5 },
+            { width: 18 },
+            { width: 18 },
+            { width: 20 }
+        ];
 
-      let lastBagian = "";
-      let lastTanggal = "";
-      let isComplete = false;
+        const thinBorder = {
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
 
-      if (isProof) {
-        // PROOF PRINT: Evaluasi Kolom N (13) sampai X (23)
-        for (let col = 13; col <= 23; col++) {
-          let headerName = headers[col] ? headers[col].toString().trim() : "";
-          if (row[col] && row[col].toString().trim() !== "") {
-            lastBagian = headerName || "Proses";
-            lastTanggal = row[col];
-            // Jika sudah sampai Kolom X (QA 2 SELESAI / index 23)
-            if (col === 23 || headerName.toUpperCase().includes("SELESAI")) {
-              isComplete = true;
+        const sectionHeaderFill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFD9E1F2' }
+        };
+
+        // 1. JUDUL FORM
+        sheet.mergeCells('B2:G2');
+        const titleCell = sheet.getCell('B2');
+        titleCell.value = 'FORM PERMINTAAN DESAIN KEMASAN OBAT';
+        titleCell.font = { size: 14, bold: true, name: 'Calibri' };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        sheet.mergeCells('B3:G3');
+        const subTitleCell = sheet.getCell('B3');
+        subTitleCell.value = 'PACKAGING DESIGN & DEVELOPMENT';
+        subTitleCell.font = { size: 10, italic: true, bold: true, color: { argb: 'FF595959' } };
+        subTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+        // 2. HEADER DOKUMEN
+        sheet.getCell('B4').value = 'No. Dokumen';
+        sheet.getCell('B4').font = { bold: true };
+        sheet.getCell('C4').value = activeData.noDokumen;
+        sheet.getCell('C4').font = { bold: true, color: { argb: 'FF002060' } };
+
+        sheet.getCell('E4').value = 'Tgl Pengajuan';
+        sheet.getCell('E4').font = { bold: true };
+        sheet.mergeCells('F4:G4');
+        sheet.getCell('F4').value = formatDate(activeData.tglPengajuan);
+
+        sheet.getCell('B5').value = 'Pemohon / Dept';
+        sheet.getCell('B5').font = { bold: true };
+        sheet.getCell('C5').value = `${activeData.namaPemohon} / ${activeData.pemohonDept}`;
+        sheet.getCell('C5').font = { bold: true, color: { argb: 'FF002060' } };
+
+        sheet.getCell('E5').value = 'Target Deadline';
+        sheet.getCell('E5').font = { bold: true };
+        sheet.mergeCells('F5:G5');
+        sheet.getCell('F5').value = formatDate(activeData.targetDeadline);
+
+        // Baris Kosong Pembatas 1 (Baris 6)
+        sheet.mergeCells('B6:G6');
+
+        // 3. SEKSI A: INFORMASI PEMOHON
+        sheet.mergeCells('B7:G7');
+        sheet.getCell('B7').value = 'A. INFORMASI PEMOHON';
+        sheet.getCell('B7').font = { bold: true };
+        sheet.getCell('B7').fill = sectionHeaderFill;
+
+        sheet.getCell('B8').value = 'Nama Pemohon';
+        sheet.mergeCells('C8:D8');
+        sheet.getCell('C8').value = activeData.namaPemohon;
+        sheet.getCell('E8').value = 'Departemen';
+        sheet.mergeCells('F8:G8');
+        sheet.getCell('F8').value = activeData.pemohonDept;
+
+        sheet.getCell('B9').value = 'Nama Produk';
+        sheet.mergeCells('C9:G9');
+
+        sheet.getCell('B10').value = 'Jenis Permintaan';
+        sheet.mergeCells('C10:G10');
+        sheet.getCell('C10').value = '[  ] Desain Baru     [  ] Revisi Desain     [  ] Perubahan Minor     [  ] Lainnya';
+
+        sheet.getCell('B11').value = 'Target Selesai';
+        sheet.mergeCells('C11:G11');
+        sheet.getCell('C11').value = formatDate(activeData.targetDeadline);
+
+        // Baris Kosong Pembatas 2 (Baris 12)
+        sheet.mergeCells('B12:G12');
+
+        // 4. SEKSI B: INFORMASI PRODUK & KATEGORI OBAT
+        sheet.mergeCells('B13:G13');
+        sheet.getCell('B13').value = 'B. INFORMASI PRODUK & KATEGORI OBAT';
+        sheet.getCell('B13').font = { bold: true };
+        sheet.getCell('B13').fill = sectionHeaderFill;
+
+        sheet.getCell('B14').value = 'Nama Produk';
+        sheet.mergeCells('C14:G14');
+
+        sheet.getCell('B15').value = 'Komposisi / Zat Aktif';
+        sheet.mergeCells('C15:G15');
+
+        sheet.getCell('B16').value = 'Bentuk Sediaan';
+        sheet.mergeCells('C16:G16');
+        sheet.getCell('C16').value = '[  ] Tablet/Kaplet   [  ] Kapsul   [  ] Sirup/Cair   [  ] Salep/Krim\n[  ] Injeksi           [  ] Tetes    [  ] Serbuk        [  ] Suppositoria';
+        sheet.getRow(16).height = 30;
+
+        sheet.getCell('B17').value = 'Golongan Obat';
+        sheet.mergeCells('C17:G17');
+        sheet.getCell('C17').value = '[  ] Bebas (Hijau)     [  ] Bebas Terbatas (Biru)     [  ] Obat Keras (K)     [  ] Herbal/Suplemen';
+
+        sheet.getCell('B18').value = 'Kategori Obat';
+        sheet.mergeCells('C18:G18');
+        sheet.getCell('C18').value = '[  ] Generik     [  ] Branded     [  ] Suplement';
+
+        // Baris Kosong Pembatas 3 (Baris 19)
+        sheet.mergeCells('B19:G19');
+
+        // 5. SEKSI C: SPESIFIKASI TEKNIS & MATERIAL KEMASAN
+        sheet.mergeCells('B20:G20');
+        sheet.getCell('B20').value = 'C. SPESIFIKASI TEKNIS & MATERIAL KEMASAN';
+        sheet.getCell('B20').font = { bold: true };
+        sheet.getCell('B20').fill = sectionHeaderFill;
+
+        sheet.getCell('B21').value = 'Jenis Kemasan';
+        sheet.mergeCells('C21:G21');
+        sheet.getCell('C21').value = '[  ] Dus / Catch Cover     [  ] Foil Blister / Strip     [  ] Etiket     [  ] Outer Box [  ] Amplop [  ] Brosur';
+
+        sheet.getCell('B22').value = 'Ukuran (PxLxT)';
+        sheet.mergeCells('C22:D22');
+        sheet.getCell('C22').value = 'P _____ x L _____ x T _____ mm';
+        sheet.getCell('E22').value = 'Material';
+        sheet.mergeCells('F22:G22');
+        sheet.getCell('F22').value = '[  ] Duplex   [  ] Foil   [  ] Vinyl   [  ] Lainnya: ____';
+
+        sheet.getCell('B23').value = 'Finishing Cetak';
+        sheet.mergeCells('C23:G23');
+        sheet.getCell('C23').value = '[  ] Doff / Glossy     [  ] Foil (Gold/Silver)     [  ] Emboss     [  ] UV Spot     [  ] Braille';
+
+        // Baris Kosong Pembatas 4 (Baris 24)
+        sheet.mergeCells('B24:G24');
+
+        // 6. SEKSI D: KONTEN MANDATORI BPOM
+        sheet.mergeCells('B25:G25');
+        sheet.getCell('B25').value = 'D. KONTEN MANDATORI BPOM';
+        sheet.getCell('B25').font = { bold: true };
+        sheet.getCell('B25').fill = sectionHeaderFill;
+
+        sheet.getCell('B26').value = 'Komposisi / Zat Aktif';
+        sheet.mergeCells('C26:D26');
+        sheet.getCell('E26').value = 'Indikasi / Netto';
+        sheet.mergeCells('F26:G26');
+
+        sheet.getCell('B27').value = 'No. Izin Edar (NIE)';
+        sheet.mergeCells('C27:G27');
+        sheet.getCell('C27').value = 'NIE / BPOM: _________________________________';
+
+        sheet.getCell('B28').value = 'Area Data';
+        sheet.mergeCells('C28:D28');
+        sheet.getCell('C28').value = '[  ] HET      [  ] Batch No.      [  ] Exp. Date [  ] QR code';
+        sheet.getCell('E28').value = 'Perhatian / Penyimpanan';
+        sheet.mergeCells('F28:G28');
+        sheet.getCell('F28').value = '[  ] Kocok Dahulu      [  ] Simpan <30°C';
+
+        // Baris Kosong Pembatas 5 (Baris 29)
+        sheet.mergeCells('B29:G29');
+
+        // 7. SEKSI E: PETUNJUK VISUAL & LAMPIRAN
+        sheet.mergeCells('B30:G30');
+        sheet.getCell('B30').value = 'E. PETUNJUK VISUAL & LAMPIRAN';
+        sheet.getCell('B30').font = { bold: true };
+        sheet.getCell('B30').fill = sectionHeaderFill;
+
+        sheet.getCell('B31').value = 'Konsep Desain';
+        sheet.mergeCells('C31:D31');
+        sheet.getCell('C31').value = '[  ] Medical & Clean      [  ] Modern      [  ] Premium';
+        sheet.getCell('E31').value = 'Warna Utama';
+        sheet.mergeCells('F31:G31');
+
+        sheet.getCell('B32').value = 'Lampiran Aset File';
+        sheet.mergeCells('C32:G32');
+        sheet.getCell('C32').value = '[  ] Naskah Teks (BPOM)     [  ] Dieline / Pola     [  ] Logo Vector     [  ] Referensi Visual';
+
+        // Baris Kosong Pembatas 6 (Baris 33)
+        sheet.mergeCells('B33:G33');
+
+        // 8. SEKSI F: LEMBAR PERSETUJUAN (SIGN-OFF)
+        sheet.mergeCells('B34:G34');
+        sheet.getCell('B34').value = 'F. LEMBAR PERSETUJUAN (SIGN-OFF)';
+        sheet.getCell('B34').font = { bold: true };
+        sheet.getCell('B34').fill = sectionHeaderFill;
+
+        // Header Jabatan Sign-Off
+        sheet.getCell('B35').value = 'Diajukan Oleh,';
+        sheet.getCell('C35').value = 'Diperiksa Oleh,';
+        sheet.mergeCells('D35:E35');
+        sheet.getCell('D35').value = 'Disetujui Oleh,';
+        sheet.mergeCells('F35:G35');
+        sheet.getCell('F35').value = 'Diterima Oleh,';
+
+        // Area Kosong Tanda Tangan (Baris 36 sampai 38 dibuat tinggi)
+        sheet.mergeCells('B36:B38');
+        sheet.mergeCells('C36:C38');
+        sheet.mergeCells('D36:E38');
+        sheet.mergeCells('F36:G38');
+
+        sheet.getRow(36).height = 25;
+        sheet.getRow(37).height = 25;
+        sheet.getRow(38).height = 25;
+
+        // Keterangan Nama / Tanggal Sign-Off
+        sheet.getCell('B39').value = `( ${activeData.namaPemohon} / ${activeData.pemohonDept} )\nTgl: ________`;
+        sheet.getCell('C39').value = '( Design )\nTgl: ________';
+        sheet.mergeCells('D39:E39');
+        sheet.getCell('D39').value = '( Registrasi )\nTgl: ________';
+        sheet.mergeCells('F39:G39');
+        sheet.getCell('F39').value = '( Plant Manager )\nTgl: ________';
+
+        // Alignment Teks Sign-Off
+        ['B35', 'C35', 'D35', 'F35', 'B39', 'C39', 'D39', 'F39'].forEach(cellRef => {
+            sheet.getCell(cellRef).alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        });
+
+        // Terapkan Border & Alignment Seluruh Sel (Baris 4 sampai 39)
+        for (let r = 4; r <= 39; r++) {
+            for (let c = 2; c <= 7; c++) {
+                const cell = sheet.getCell(r, c);
+                cell.border = thinBorder;
+                if (!cell.alignment) {
+                    cell.alignment = { vertical: 'middle', wrapText: true };
+                } else {
+                    cell.alignment.wrapText = true;
+                    cell.alignment.vertical = 'middle';
+                }
             }
-          }
         }
-      } else {
-        // ARTWORK: Evaluasi Kolom E (4) sampai M (12)
-        for (let col = 4; col <= 12; col++) {
-          let headerName = headers[col] ? headers[col].toString().trim() : "";
-          if (row[col] && row[col].toString().trim() !== "") {
-            lastBagian = headerName || "Proses";
-            lastTanggal = row[col];
-            // Jika sudah sampai Kolom M (KIRIM EMAIL SELESAI / index 12)
-            if (col === 12 || headerName.toUpperCase().includes("SELESAI")) {
-              isComplete = true;
-            }
-          }
-        }
-      }
 
-      let progressBadge = "";
-      if (isComplete) {
-        progressBadge = `<span class="badge badge-done">✅ Selesai: ${lastBagian} (${lastTanggal})</span>`;
-      } else if (lastBagian !== "") {
-        progressBadge = `<span class="badge badge-pending">⏳ Sedang di Bagian: <strong>${lastBagian}</strong> (${lastTanggal})</span>`;
-      } else {
-        progressBadge = `<span class="badge badge-new">📁 Baru Didaftarkan (Belum ACC Bagian)</span>`;
-      }
-
-      const tr = document.createElement("tr");
-
-      if (isProof) {
-        tr.innerHTML = `
-          <td>${noCell}</td>
-          <td>${kategoriBadge}</td>
-          <td><strong>${nama}</strong></td>
-          <td>${type}</td>
-          <td>${percetakan}</td>
-          <td>${progressBadge}</td>
-        `;
-        tbodyProof.appendChild(tr);
-        counterProof++;
-      } else {
-        tr.innerHTML = `
-          <td>${noCell}</td>
-          <td>${kategoriBadge}</td>
-          <td><strong>${nama}</strong></td>
-          <td>${type}</td>
-          <td>${percetakan}</td>
-          <td>${progressBadge}</td>
-        `;
-        tbodyArtwork.appendChild(tr);
-        counterArtwork++;
-      }
+        // Simpan File Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, `Form_Permintaan_Desain_${activeData.noDokumen.replace(/[\/\\:]/g, '_')}.xlsx`);
     }
-
-    if (counterArtwork === 1) {
-      tbodyArtwork.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Belum ada data Artwork terdaftar.</td></tr>";
-    }
-    if (counterProof === 1) {
-      tbodyProof.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Belum ada data Proof Print terdaftar.</td></tr>";
-    }
-  }
-
-  function filterTable() {
-    const query = document.getElementById("searchBox").value.toLowerCase();
-    const targetTableId = activeTab === "Artwork" ? "#tableBodyArtwork" : "#tableBodyProof";
-    const rows = document.querySelectorAll(`${targetTableId} tr`);
-    
-    rows.forEach(row => {
-      const text = row.innerText.toLowerCase();
-      row.style.display = text.includes(query) ? "" : "none";
-    });
-  }
 </script>
 
 </body>
